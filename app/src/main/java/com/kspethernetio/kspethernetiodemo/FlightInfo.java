@@ -20,6 +20,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets;
@@ -405,11 +406,11 @@ public class FlightInfo extends AppCompatActivity
                             port=newPort;
                             intervall=newIntervall;
                             initializeClient();
+                            showMessage("Settings saved!");
                         }
                         catch(Exception e)
                         {
-                            //TODO
-                            e.printStackTrace();
+                            showMessage("Settings not saved: Wrong input format!");
                         }
                     }
                 })
@@ -572,7 +573,8 @@ public class FlightInfo extends AppCompatActivity
         @Override
         public void onKSPEthernetError(KSPEthernetClient sender, Exception e)
         {
-            //TODO
+
+            showMessage("Ethernet client error: "+e.getMessage());
         }
 
         @Override
@@ -588,7 +590,7 @@ public class FlightInfo extends AppCompatActivity
             }
             catch(InterruptedException e)
             {
-                //TODO
+
             }
         }
 
@@ -597,8 +599,6 @@ public class FlightInfo extends AppCompatActivity
         {
             try
             {
-                System.out.println(state);
-
                 vesselDataLock.acquire();
                 vesselData=null;
                 vesselDataLock.release();
@@ -608,8 +608,7 @@ public class FlightInfo extends AppCompatActivity
             }
             catch(InterruptedException e)
             {
-                //TODO
-                e.printStackTrace();
+
             }
         }
     };
@@ -642,7 +641,6 @@ public class FlightInfo extends AppCompatActivity
                 }
                 catch(InterruptedException e)
                 {
-                    //TODO
                     updateUiLock.release();
                     return;
                 }
@@ -793,8 +791,6 @@ public class FlightInfo extends AppCompatActivity
             }
             catch(InterruptedException e)
             {
-                //TODO
-                e.printStackTrace();
             }
         }
     };
@@ -832,6 +828,14 @@ public class FlightInfo extends AppCompatActivity
                 activeActivity.getResources().getDisplayMetrics());
         canvas.drawRect(new RectF(twoDp,((1-p)*(h-2*twoDp))+twoDp,w-twoDp,h-twoDp), paint);
         view.setImageBitmap(bmp);
+    }
+
+    private void showMessage(String message)
+    {
+        Toast toast = Toast.makeText(getApplicationContext(),
+                message,
+                Toast.LENGTH_LONG);
+        toast.show();
     }
 
 
