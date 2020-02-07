@@ -10,7 +10,9 @@ public class DataPackets
 
     public enum SASMode {Off, Regular, Prograde, Retrograde, Normal, Antinormal, RadialIn, RadialOut, Target, AntiTarget, Maneuver, Unknown}
     public enum NavballMode {Ignore, Target, Orbit, Surface, Unkonwn}
-    public enum MapMode {Stage, Docking, Map}
+    public enum UiMode
+    {Stage, Docking, Map}
+    public enum CamMode {Auto, Free, Orbital, Chase, Locked}
 
     public static String timeToString(long t)
     {
@@ -330,10 +332,11 @@ public class DataPackets
     {
         public short id = CPid;
         public short MainControls;                  //SAS RCS Lights Gear Brakes Precision Abort Stage
-        public short Mode;                          //0 = stage, 1 = docking, 2 = map
+        public short Mode;                          //0 = stage, 1 = docking, 2 = map (Bit 0-3)
+                                                    //Camera Mode 0:Auto 1:Free 2:Orbital 3:Chase 4:Locked (Bit 4-7)
         public boolean[] ControlGroup = new boolean[16];                //control groups 1-10 in 2 bytes
         public short NavballSASMode;                //AutoPilot mode (See above for AutoPilot modes)(Ignored if the equal to zero or out of bounds (>10)) //Navball mode
-        public short AdditionalControlByte1;
+        public short AdditionalControlByte1;        //Bit 0: Open Menu
         public short Pitch;                        //-1000 -> 1000
         public short Roll;                         //-1000 -> 1000
         public short Yaw;                          //-1000 -> 1000
@@ -344,27 +347,71 @@ public class DataPackets
         public short Throttle;                     // 0 -> 1000
         public short WheelThrottle;                // 0 -> 1000
 
-        public void setMapMode(MapMode m)
+        public void toggleMap()
         {
+            AdditionalControlByte1^=0b00000010;
+        }
+        public void toggleMenu()
+        {
+            AdditionalControlByte1^=0b00000001;
+        }
+        public void setCamMode(CamMode m)
+        {
+            Mode &= 0b1111;
             switch(m)
             {
-                case Stage:
-                    Mode=0;
+                case Auto:
+                    Mode|=0<<4;
                     break;
-                case Docking:
-                    Mode=1;
+                case Free:
+                    Mode|=1<<4;
                     break;
-                case Map:
-                    Mode=2;
+                case Orbital:
+                    Mode|=2<<4;
+                    break;
+                case Chase:
+                    Mode|=3<<4;
+                    break;
+                case Locked:
+                    Mode|=4<<4;
                     break;
                 default:
                     break;
             }
         }
-        public void rotateMapMode()
+        public void rotateCamMode()
         {
-            Mode++;
-            if(Mode>2) Mode=0;
+            int tmp = (Mode & ~0b1111)>>4;
+            Mode&=0b1111;
+            tmp++;
+            if(tmp>4) tmp=0;
+            Mode|=tmp<<4;
+        }
+        public void setUiMode(UiMode m)
+        {
+            Mode &= ~0b1111;
+            switch(m)
+            {
+                case Stage:
+                    Mode|=0;
+                    break;
+                case Docking:
+                    Mode|=1;
+                    break;
+                case Map:
+                    Mode|=2;
+                    break;
+                default:
+                    break;
+            }
+        }
+        public void rotateUiMode()
+        {
+            int tmp = Mode & 0b1111;
+            Mode&=~0b1111;
+            tmp++;
+            if(tmp>2) tmp=0;
+            Mode|=tmp;
         }
         public void setNavballMode(NavballMode m)
         {

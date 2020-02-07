@@ -3,7 +3,6 @@ package com.kspethernetio.kspethernetiodemo;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -11,6 +10,7 @@ import android.graphics.RectF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -217,6 +217,8 @@ public class FlightInfo extends AppCompatActivity
         toggleSASTar.setOnCheckedChangeListener(actionSASSelectListener);
         toggleSASAta.setOnCheckedChangeListener(actionSASSelectListener);
         toggleSASMan.setOnCheckedChangeListener(actionSASSelectListener);
+
+        buttonMenu.setOnLongClickListener(actionButtonHoldListener);
     }
     
     private void updateViews(boolean inactive)
@@ -416,6 +418,22 @@ public class FlightInfo extends AppCompatActivity
                 .show();
     }
 
+    private View.OnLongClickListener actionButtonHoldListener = new View.OnLongClickListener()
+    {
+        @Override
+        public boolean onLongClick(View v)
+        {
+            switch(v.getId())
+            {
+                case R.id.buttonMenu:
+                    client.controlData.toggleMenu();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    };
+
     private View.OnClickListener actionButtonListener = new View.OnClickListener()
     {
         @Override
@@ -445,14 +463,13 @@ public class FlightInfo extends AppCompatActivity
                 case R.id.buttonTarget:
                     break;
                 case R.id.buttonMap:
-                    //TODO
-                    client.controlData.rotateMapMode();
+                    client.controlData.toggleMap();
                     break;
                 case R.id.buttonCamera:
-                    //TODO
+                    client.controlData.rotateCamMode();
                     break;
                 case R.id.buttonMenu:
-                    //TODO
+                    client.controlData.rotateUiMode();
                     break;
                 default:
                     break;
