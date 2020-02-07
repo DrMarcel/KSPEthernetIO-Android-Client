@@ -38,7 +38,7 @@ import java.util.concurrent.Semaphore;
 //TODO Reset data on active vessel change - Transmit vessel ID ?
 //TODO Update info screen
 //TODO Code documentation, tidy up
-
+//TODO Clean compiler warnings
 
 
 public class FlightInfo extends AppCompatActivity
