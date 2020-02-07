@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/vect_target"
+        android:state_checked="true"
+        android:state_enabled="true"/>
+    <item android:drawable="@drawable/vect_targetg"
+        android:state_checked="false"
+        android:state_enabled="true"/>
+    <item android:drawable="@drawable/vect_targetdg"
+        android:state_enabled="false"/>
+</selector>
