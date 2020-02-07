@@ -28,6 +28,19 @@ import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.KSPEthernetClient;
 
 import java.util.concurrent.Semaphore;
 
+
+
+//TODO Add more orbital infos
+//TODO Permanent save settings
+//TODO Custom actiongroup names in settings
+//TODO Centralize all coloring in config files
+//TODO Tests on different screen sizes
+//TODO Reset data on active vessel change - Transmit vessel ID ?
+//TODO Update info screen
+//TODO Code documentation, tidy up
+
+
+
 public class FlightInfo extends AppCompatActivity
 {
     Activity activeActivity;

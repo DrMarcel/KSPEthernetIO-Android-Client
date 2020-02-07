@@ -11,6 +11,7 @@ import android.graphics.Rect;
 import android.util.TypedValue;
 
 
+
 public class Navball
 {
     private Paint lineColor, lineColorNorth, topSideColor, bottomSideColor;
