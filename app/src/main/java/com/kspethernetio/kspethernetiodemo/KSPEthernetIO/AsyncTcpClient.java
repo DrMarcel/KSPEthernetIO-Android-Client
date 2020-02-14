@@ -1,4 +1,5 @@
 package com.kspethernetio.kspethernetiodemo.KSPEthernetIO;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -7,20 +8,29 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.MyEvent;
+import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.AbstractEvent;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventProvider;
 
+/**
+ * Async TCP client.
+ * Connects to TCP server and provides events on data receive.
+ */
 public class AsyncTcpClient extends EventProvider
 {
 	private Socket socket = null;
 	private SocketAddress server;
 	
-	private AtomicBoolean active = new AtomicBoolean(false);
-	private AtomicBoolean cancel = new AtomicBoolean(false);
+	private AtomicBoolean active = new AtomicBoolean(false); //Thread safe active stated
+	private AtomicBoolean cancel = new AtomicBoolean(false); //Thread safe cancel signal
 	
-	public AsyncTcpClient sender;
-	
-	
+	public AsyncTcpClient sender; //Contains 'this' to access from child thread
+
+    /**
+     * Create new TCP client for specific host.
+     *
+     * @param address Host address
+     * @param port Host port
+     */
 	public AsyncTcpClient(InetAddress address, int port)
 	{
 		super();
@@ -28,13 +38,22 @@ public class AsyncTcpClient extends EventProvider
 		sender = this;
 	}
 
-	
-	
+    /**
+     * Try to connect to host.
+     * Triggers Connected event on success.
+     * Trigger Disconnected event on failure.
+     */
 	public void startReceiveData()
 	{
 		Thread t = new Thread(tWaitForData);
 		t.start();
 	}
+
+    /**
+     * Try to send data to connected host.
+     *
+     * @param data Data to send
+     */
 	public void sendData(byte[] data)
 	{
 		if(isActive())
@@ -49,6 +68,12 @@ public class AsyncTcpClient extends EventProvider
 			}
 		}
 	}
+
+    /**
+     * Background thread listening for incoming data.
+     * Can be stopped by setting cancel = true.
+     * Delievers events on Connect, Disconnect and data receive
+     */
 	private Runnable tWaitForData = new Runnable()
 	{		
 		@Override
@@ -67,10 +92,10 @@ public class AsyncTcpClient extends EventProvider
 				socket = new Socket();
 				socket.connect(server, 1000);
 				socket.setSoTimeout(10);
-				socket.setTcpNoDelay(true);
+				socket.setTcpNoDelay(true); // Don't buffer small packets
 				socket.setReceiveBufferSize(1024);
 				socket.setSendBufferSize(1024);
-				notifyEvent(new TcpMyEvent(sender, TcpMyEvent.TcpEventType.Connected));
+				notifyEvent(new TcpEvent(sender, TcpEvent.TcpEventType.Connected));
 			}
 			catch(Exception e)
 			{
@@ -91,7 +116,7 @@ public class AsyncTcpClient extends EventProvider
 					{
 						byte[] rec = new byte[n];
 						for(int i=0;i<n;i++) rec[i]=buffer[i];
-						notifyEvent(new TcpMyEvent(sender, TcpMyEvent.TcpEventType.Received, rec));
+						notifyEvent(new TcpEvent(sender, TcpEvent.TcpEventType.Received, rec));
 					}
 					else cancel.set(true);
 				}
@@ -115,48 +140,98 @@ public class AsyncTcpClient extends EventProvider
 			cancel.set(false);
 			active.set(false);	
 			
-			notifyEvent(new TcpMyEvent(sender, TcpMyEvent.TcpEventType.Disconnected, exception));
+			notifyEvent(new TcpEvent(sender, TcpEvent.TcpEventType.Disconnected, exception));
 
 			return;
 		}
 	};
-		
 
-	
-	public boolean isActive()
+    /**
+     * Check if TCP client is active.
+     *
+     * @return True if active
+     */
+    public boolean isActive()
 	{
 		return active.get();
 	}
+
+    /**
+     * Cancel listening.
+     */
 	public void cancelReceiveData()
 	{
 		if(isActive()) cancel.set(true);
 	}
-	
-	public static class TcpMyEvent extends MyEvent
+
+    /**
+     * TCP client events.
+     */
+	public static class TcpEvent extends AbstractEvent
 	{
-		public static enum TcpEventType {Connected, Disconnected, Received}
-		
-		public TcpMyEvent(AsyncTcpClient sender, TcpEventType t, byte[] arg)
+		public enum TcpEventType {Connected, Disconnected, Received}
+
+        /**
+         * New TcpEvent with received data.
+         *
+         * @param sender AsyncTcpClient
+         * @param t TcpEventType
+         * @param arg Byte array
+         */
+		public TcpEvent(AsyncTcpClient sender, TcpEventType t, byte[] arg)
 		{
 			super(sender, t.ordinal(), arg);
 		}
-		public TcpMyEvent(AsyncTcpClient sender, TcpEventType t, Exception arg)
+
+        /**
+         * New TcpEvent with Exception.
+         *
+         * @param sender AsyncTcpClient
+         * @param t TcpEventType
+         * @param arg Exception
+         */
+		public TcpEvent(AsyncTcpClient sender, TcpEventType t, Exception arg)
 		{
 			super(sender, t.ordinal(), arg);
 		}
-		public TcpMyEvent(AsyncTcpClient sender, TcpEventType t)
+
+        /**
+         * New TcpEvent without argument.
+         *
+         * @param sender AsyncTcpClient
+         * @param t TcpEventType
+         */
+		public TcpEvent(AsyncTcpClient sender, TcpEventType t)
 		{
 			super(sender, t.ordinal(), null);
 		}
-		
+
+        /**
+         * Get event type.
+         *
+         * @return TcpEventType
+         */
 		public TcpEventType getType()
 		{
 			return TcpEventType.values()[id];
 		}
+
+        /**
+         * Get data of received data event.
+         *
+         * @return Byte array
+         */
 		public byte[] getData()
 		{
 			return (byte[])arg;
 		}
+
+        /**
+         * Get exception of disconnect event.
+         * Return null on user cancel.
+         *
+         * @return Exception or null
+         */
 		public Exception getException()
 		{
 			return (Exception)arg;

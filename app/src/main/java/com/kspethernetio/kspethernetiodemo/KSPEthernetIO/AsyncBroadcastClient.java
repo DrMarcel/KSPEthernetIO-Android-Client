@@ -6,21 +6,30 @@ import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.MyEvent;
+import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.AbstractEvent;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventProvider;
 
+/**
+ * Async UDP broadcast listener.
+ * Listens on specified port for broadcast messages and provides events if a broadcast packet was
+ * received.
+ */
 public class AsyncBroadcastClient extends EventProvider
 {
 	private DatagramSocket socket = null;
 	private int port;
 	
-	private AtomicBoolean active = new AtomicBoolean(false);
-	private AtomicBoolean cancel = new AtomicBoolean(false);
+	private AtomicBoolean active = new AtomicBoolean(false); //Thread safe active state
+	private AtomicBoolean cancel = new AtomicBoolean(false); //Thread safe cancel signal
 	
-	private AsyncBroadcastClient sender;
-	
-	
-	
+	private AsyncBroadcastClient sender; //Contains 'this' to access from child thread
+
+
+	/**
+	 * Create new broadcast client listening on specific port.
+	 *
+	 * @param port Port
+	 */
 	public AsyncBroadcastClient(int port)
 	{
 		super();
@@ -28,14 +37,24 @@ public class AsyncBroadcastClient extends EventProvider
 		sender = this;
 	}
 
-	
-	
+	/**
+	 * Start listening.
+	 * Starts background thread listening for broadcasts.
+	 * Triggers a 'Started' event.
+	 * If not successful also triggers a 'Canceled' event.
+	 */
 	public void startReceiveBroadcast()
 	{
 		Thread t = new Thread(tWaitForBroadcast);
 		
 		t.start();
 	}
+
+	/**
+	 * Background thread listening for broadcasts.
+	 * Can be stopped by setting cancel = true.
+	 * Delievers events on Start, Stop and data receive
+	 */
 	private Runnable tWaitForBroadcast = new Runnable()
 	{
 		@Override
@@ -47,7 +66,7 @@ public class AsyncBroadcastClient extends EventProvider
 			cancel.set(false);
 			Exception exception = null;
 
-			notifyEvent(new BroadcastMyEvent(sender, BroadcastMyEvent.BroadcastEventType.Started));
+			notifyEvent(new BroadcastEvent(sender, BroadcastEvent.BroadcastEventType.Started));
 			
 			//Try to open the socket
 			try
@@ -70,7 +89,7 @@ public class AsyncBroadcastClient extends EventProvider
 					DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
 					socket.receive(packet);
 										
-					notifyEvent(new BroadcastMyEvent(sender, BroadcastMyEvent.BroadcastEventType.Received, packet));
+					notifyEvent(new BroadcastEvent(sender, BroadcastEvent.BroadcastEventType.Received, packet));
 				}
 				catch(SocketTimeoutException e)
 				{
@@ -88,49 +107,97 @@ public class AsyncBroadcastClient extends EventProvider
 			cancel.set(false);
 			active.set(false);	
 			
-			notifyEvent(new BroadcastMyEvent(sender, BroadcastMyEvent.BroadcastEventType.Canceled, exception));
+			notifyEvent(new BroadcastEvent(sender, BroadcastEvent.BroadcastEventType.Canceled, exception));
 			return;
 		}
 	};
-		
 
-	
+	/**
+	 * Check if broadcast client is active.
+	 *
+ 	 * @return True if active
+	 */
 	public boolean isActive()
 	{
 		return active.get();
 	}
+
+	/**
+	 * Cancel listening.
+	 */
 	public void cancelReceiveBroadcast()
 	{
 		if(isActive()) cancel.set(true);
 	}
-	
-	
 
-	public static class BroadcastMyEvent extends MyEvent
+	/**
+	 * Broadcast events
+	 */
+	public static class BroadcastEvent extends AbstractEvent
 	{
-		public static enum BroadcastEventType {Received, Started, Canceled}
-		
-		public BroadcastMyEvent(AsyncBroadcastClient sender, BroadcastEventType t, DatagramPacket arg)
+		public enum BroadcastEventType {Received, Started, Canceled}
+
+		/**
+		 * Create BroadcastEvent with DatagramPacket.
+		 *
+		 * @param sender AsyncBroadcastClient
+		 * @param t BroadcastEventType
+		 * @param arg DatagramPacket
+		 */
+		public BroadcastEvent(AsyncBroadcastClient sender, BroadcastEventType t, DatagramPacket arg)
 		{
 			super(sender, t.ordinal(), arg);
 		}
-		public BroadcastMyEvent(AsyncBroadcastClient sender, BroadcastEventType t, Exception arg)
+
+		/**
+		 * Create BroadcastEvent with Exception.
+		 *
+		 * @param sender AsyncBroadcastClient
+		 * @param t BroadcastEventType
+		 * @param arg Exception
+		 */
+		public BroadcastEvent(AsyncBroadcastClient sender, BroadcastEventType t, Exception arg)
 		{
 			super(sender, t.ordinal(), arg);
 		}
-		public BroadcastMyEvent(AsyncBroadcastClient sender, BroadcastEventType t)
+
+		/**
+		 * Create BroadcastEvent without argument.
+		 *
+		 * @param sender AsyncBroadcastClient
+		 * @param t BroadcastEventType
+		 */
+		public BroadcastEvent(AsyncBroadcastClient sender, BroadcastEventType t)
 		{
 			super(sender, t.ordinal(), null);
 		}
-		
+
+		/**
+		 * Get Event type.
+		 *
+		 * @return BroadcastEventType
+		 */
 		public BroadcastEventType getType()
 		{
 			return BroadcastEventType.values()[id];
 		}
+
+		/**
+		 * Get data from Received event.
+		 *
+		 * @return DatagramPacket
+		 */
 		public DatagramPacket getData()
 		{
 			return (DatagramPacket)arg;
 		}
+
+		/**
+		 * Get exception from Canceled event.
+		 * Return null on user cancel.
+		 *
+		 * @return Exception or null
+		 */
 		public Exception getException()
 		{
 			return (Exception)arg;

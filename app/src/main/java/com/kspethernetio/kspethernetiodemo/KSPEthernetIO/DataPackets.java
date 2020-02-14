@@ -2,6 +2,19 @@ package com.kspethernetio.kspethernetiodemo.KSPEthernetIO;
 
 import java.net.InetAddress;
 
+/**
+ * Contains data packet structures and functions to convert between structs and byte arrays.
+ * Slighly modified version of zitronen-git/KSPSerialIO 0.19.1
+ * Angles changed to UInt16 like in some other forks of the original code.
+ *
+ * Because Java does not support unsigned data types all unsigned types from the host data packets
+ * are converted to the next bigger data type:
+ *  byte -> short
+ *  Uint16 -> int
+ *  Uint32 -> long
+ *
+ *  Also contains some helper functions for data handling.
+ */
 public class DataPackets
 {
 	public final static int MaxPayloadSize = 255;
@@ -10,10 +23,15 @@ public class DataPackets
 
     public enum SASMode {Off, Regular, Prograde, Retrograde, Normal, Antinormal, RadialIn, RadialOut, Target, AntiTarget, Maneuver, Unknown}
     public enum NavballMode {Ignore, Target, Orbit, Surface, Unkonwn}
-    public enum UiMode
-    {Stage, Docking, Map}
+    public enum UiMode {Stage, Docking, Map}
     public enum CamMode {Auto, Free, Orbital, Chase, Locked}
 
+    /**
+     * Convert time in seconds to String of format XXyXXXdXXhXXmXXs
+     *
+     * @param t Time in seconds
+     * @return String of format XXyXXXdXXhXXmXXs
+     */
     public static String timeToString(long t)
     {
         String ret = "";
@@ -43,6 +61,12 @@ public class DataPackets
         return ret;
     }
 
+    /**
+     * Convert distance in meters to String of format XXX[.]X(m|k|M)
+     *
+     * @param d Distance in meters
+     * @return String of format XXX[.]X(m|k|M)
+     */
     public static String distanceToString(float d)
     {
         String ret = "";
@@ -53,6 +77,9 @@ public class DataPackets
         return ret;
     }
 
+    /**
+     * Unidirectional data from KSPEthernetIO to client.
+     */
     public static class VesselData
     {
         public short id;              //1
@@ -92,47 +119,62 @@ public class DataPackets
         public float LiquidFuelS;    //35
         public float OxidizerTotS;   //36
         public float OxidizerS;      //37
-        public long MissionTime;   //38
+        public long MissionTime;     //38
         public float deltaTime;      //39
         public float VOrbit;         //40
-        public long MNTime;        //41
+        public long MNTime;          //41
         public float MNDeltaV;       //42
-        public int Pitch;          //43
-        public int Roll;           //44
-        public int Heading;        //45
-        public int ActionGroups;  //46  status bit order:SAS, RCS, Light, Gear, Brakes, Abort, Custom01 - 10
-        public short SOINumber;       //47  SOI Number (decimal format: sun-planet-moon e.g. 130 = kerbin, 131 = mun)
-        public short MaxOverHeat;     //48  Max part overheat (% percent)
+        public int Pitch;            //43
+        public int Roll;             //44
+        public int Heading;          //45
+        public int ActionGroups;     //46  status bit order:SAS, RCS, Light, Gear, Brakes, Abort, Custom01 - 10
+        public short SOINumber;      //47  SOI Number (decimal format: sun-planet-moon e.g. 130 = kerbin, 131 = mun)
+        public short MaxOverHeat;    //48  Max part overheat (% percent)
         public float MachNumber;     //49
         public float IAS;            //50  Indicated Air Speed
-        public short CurrentStage;    //51  Current stage number
-        public short TotalStage;      //52  TotalNumber of stages
+        public short CurrentStage;   //51  Current stage number
+        public short TotalStage;     //52  TotalNumber of stages
         public float TargetDist;     //53  Distance to targeted vessel (m)
         public float TargetV;        //54  Target vessel relative velocity (m/s)
-        public short NavballSASMode;  //55  Combined byte for nav_navballbackground vect_target mode and SAS mode
+        public short NavballSASMode; //55  Combined byte for nav_navballbackground vect_target mode and SAS mode
                                      // First four bits indicate AutoPilot mode:
                                      // 0 SAS is off  //1 = Regular Stability Assist //2 = Prograde
                                      // 3 = RetroGrade //4 = Normal //5 = Antinormal //6 = Radial In
                                      // 7 = Radial Out //8 = Target //9 = Anti-Target //10 = Maneuver node
                                      // Last 4 bits set nav_navballbackground mode. (0=ignore,1=ORBIT,2=SURFACE,3=TARGET)
-        public int ProgradePitch;  //56 Pitch   Of the Prograde Vector;  int_16 ranging from (-0x8000(-360 degrees) to 0x7FFF(359.99ish degrees));
-        public int ProgradeHeading;//57 Heading Of the Prograde Vector;  see above for range   (Prograde vector depends on nav_navballbackground mode, eg Surface/Orbit/Target)
-        public int ManeuverPitch;  //58 Pitch   Of the Maneuver Vector;  see above for range;  (0 if no Maneuver node)
-        public int ManeuverHeading;//59 Heading Of the Maneuver Vector;  see above for range;  (0 if no Maneuver node)
-        public int TargetPitch;    //60 Pitch   Of the Target   Vector;  see above for range;  (0 if no Target)
-        public int TargetHeading;  //61 Heading Of the Target   Vector;  see above for range;  (0 if no Target)
-        public int NormalHeading;  //62 Heading Of the Prograde Vector;  see above for range;  (Pitch of the Heading Vector is always 0)
+        public int ProgradePitch;    //56 Pitch   Of the Prograde Vector;  int_16 ranging from (-0x8000(-360 degrees) to 0x7FFF(359.99ish degrees));
+        public int ProgradeHeading;  //57 Heading Of the Prograde Vector;  see above for range   (Prograde vector depends on nav_navballbackground mode, eg Surface/Orbit/Target)
+        public int ManeuverPitch;    //58 Pitch   Of the Maneuver Vector;  see above for range;  (0 if no Maneuver node)
+        public int ManeuverHeading;  //59 Heading Of the Maneuver Vector;  see above for range;  (0 if no Maneuver node)
+        public int TargetPitch;      //60 Pitch   Of the Target   Vector;  see above for range;  (0 if no Target)
+        public int TargetHeading;    //61 Heading Of the Target   Vector;  see above for range;  (0 if no Target)
+        public int NormalHeading;    //62 Heading Of the Prograde Vector;  see above for range;  (Pitch of the Heading Vector is always 0)
 
+        /**
+         * Return if target is set.
+         * TODO Transfer target set bit in data packet
+         * @return True if target is set
+         */
         public boolean isTargetSet()
         {
             return !(TargetHeading == 0 && TargetPitch == 0);
         }
 
+        /**
+         * Return if maneuver node is set.
+         * TODO Transfer maneuver node set bit in data packet
+         * @return True if maneuver node is set
+         */
         public boolean isManeuverSet()
         {
             return !(ManeuverHeading == 0 && ManeuverPitch == 0);
         }
 
+        /**
+         * Get Navball mode.
+         *
+         * @return Navball mode enum
+         */
         public NavballMode getNavballMode()
         {
             switch((NavballSASMode&0b11110000)>>4)
@@ -150,6 +192,11 @@ public class DataPackets
             }
         }
 
+        /**
+         * Get SAS mode.
+         *
+         * @return SAS mode enum
+         */
         public SASMode getSASMode()
         {
             switch(NavballSASMode&0b1111)
@@ -181,35 +228,74 @@ public class DataPackets
             }
         }
 
+        /**
+         * Get action group state.
+         *
+         * @param n Action group 0-9
+         * @return True if action group is set. False if out of range.
+         */
         public boolean getActionGroup(int n)
         {
+            if(n<0 || n>9) return false;
             return (ActionGroups & (1<<(n+6)))!=0;
         }
+
+        /**
+         * Get SAS state.         *
+         * @return True if SAS is on
+         */
         public boolean getSAS()
         {
             return (ActionGroups & (1<<(0)))!=0;
         }
+        /**
+         * Get RCS state.         *
+         * @return True if RCS is on
+         */
         public boolean getRCS()
         {
             return (ActionGroups & (1<<(1)))!=0;
         }
+        /**
+         * Get Light state.         *
+         * @return True if light is on
+         */
         public boolean getLight()
         {
             return (ActionGroups & (1<<(2)))!=0;
         }
+        /**
+         * Get gears state.         *
+         * @return True if gears extracted
+         */
         public boolean getGears()
         {
             return (ActionGroups & (1<<(3)))!=0;
         }
+        /**
+         * Get brakes state.         *
+         * @return True if brakes are on
+         */
         public boolean getBrakes()
         {
             return (ActionGroups & (1<<(4)))!=0;
         }
+        /**
+         * Get abort state.         *
+         * @return True on abort
+         */
         public boolean getAbort()
         {
             return (ActionGroups & (1<<(5)))!=0;
         }
 
+        /**
+         * Convert byte array starting with packet ID to VesselData object.
+         *
+         * @param packet Data array
+         * @return VesselData
+         * @throws PacketException Packet read error
+         */
         public static VesselData fromPacket(byte[] packet) throws PacketException
         {
         	byte[] data = getPayload(packet);
@@ -281,7 +367,13 @@ public class DataPackets
             
         	return VDP;
         }
-        
+
+        /**
+         * Convert to String.
+         * TODO VesselData.toString not implemented yet. Do if very bored some time.
+         *
+         * @return String representing the VesselData
+         */
         public String toString()
         {
         	String str = "VDP{"+"}";
@@ -289,14 +381,28 @@ public class DataPackets
         }
     }
 
+    /**
+     * Bidirectional handshake data.
+     * Also contains the InetAddress of the sender.
+     */
     public static class HandshakePacket
     {
         public short id = HSPid;
         public short M1;
         public short M2;
         public short M3;
+
+        //Wrapper for the sender InetAddress, has to be set manually after receive
+        //TODO Set InetAddress in contructor
         public InetAddress sender = null;
-        
+
+        /**
+         * Convert byte array starting with packet ID to VesselData object.
+         *
+         * @param packet Data array
+         * @return HandshakePacket
+         * @throws PacketException Packet read error
+         */
         public static HandshakePacket fromPacket(byte[] packet) throws PacketException
         {
         	byte[] data = getPayload(packet);
@@ -308,6 +414,13 @@ public class DataPackets
         	HP.M3=s.deserializeUB8();
         	return HP;
         }
+
+        /**
+         * Convert HandshakePacket to byte array.
+         *
+         * @return Data byte array
+         * @throws PacketException Packet write error
+         */
         public byte[] toPacket() throws PacketException
         {
         	byte[] data = new byte[1024];
@@ -320,7 +433,12 @@ public class DataPackets
         	System.arraycopy(data, 0, datacut, 0, s.getLenght());
         	return fromPayload(datacut);
         }
-        
+
+        /**
+         * Convert to String.
+         *
+         * @return String representing the HandshakePacket
+         */
         public String toString()
         {
         	String str = "HP{"+M1+","+M2+","+M3+"}";
@@ -328,33 +446,49 @@ public class DataPackets
         }
     }
 
+    /**
+     * Unidirectional data from client to KSPEthernetIO.
+     */
     public static class ControlPacket
     {
         public short id = CPid;
-        public short MainControls;                  //SAS RCS Lights Gear Brakes Precision Abort Stage
-        public short Mode;                          //0 = stage, 1 = docking, 2 = map (Bit 0-3)
-                                                    //Camera Mode 0:Auto 1:Free 2:Orbital 3:Chase 4:Locked (Bit 4-7)
-        public boolean[] ControlGroup = new boolean[16];                //control groups 1-10 in 2 bytes
-        public short NavballSASMode;                //AutoPilot mode (See above for AutoPilot modes)(Ignored if the equal to zero or out of bounds (>10)) //Navball mode
-        public short AdditionalControlByte1;        //Bit 0: Open Menu
-        public short Pitch;                        //-1000 -> 1000
-        public short Roll;                         //-1000 -> 1000
-        public short Yaw;                          //-1000 -> 1000
-        public short TX;                           //-1000 -> 1000
-        public short TY;                           //-1000 -> 1000
-        public short TZ;                           //-1000 -> 1000
-        public short WheelSteer;                   //-1000 -> 1000
-        public short Throttle;                     // 0 -> 1000
-        public short WheelThrottle;                // 0 -> 1000
+        public short MainControls;                      //SAS RCS Lights Gear Brakes Precision Abort Stage
+        public short Mode;                              //0 = stage, 1 = docking, 2 = map (Bit 0-3)
+                                                        //Camera Mode 0:Auto 1:Free 2:Orbital 3:Chase 4:Locked (Bit 4-7)
+        public boolean[] ControlGroup = new boolean[16];//control groups 1-10 in 2 bytes
+        public short NavballSASMode;                    //AutoPilot mode (See above for AutoPilot modes)(Ignored if the equal to zero or out of bounds (>10)) //Navball mode
+        public short AdditionalControlByte1;            //Bit 0: Open Menu
+        public short Pitch;                             //-1000 -> 1000
+        public short Roll;                              //-1000 -> 1000
+        public short Yaw;                               //-1000 -> 1000
+        public short TX;                                //-1000 -> 1000
+        public short TY;                                //-1000 -> 1000
+        public short TZ;                                //-1000 -> 1000
+        public short WheelSteer;                        //-1000 -> 1000
+        public short Throttle;                          // 0 -> 1000
+        public short WheelThrottle;                     // 0 -> 1000
 
+        /**
+         * Toggle Map view
+         */
         public void toggleMap()
         {
             AdditionalControlByte1^=0b00000010;
         }
+
+        /**
+         * Toggle Menu
+         */
         public void toggleMenu()
         {
             AdditionalControlByte1^=0b00000001;
         }
+
+        /**
+         * Set camera mode.
+         *
+         * @param m CamMode enum
+         */
         public void setCamMode(CamMode m)
         {
             Mode &= 0b1111;
@@ -379,6 +513,10 @@ public class DataPackets
                     break;
             }
         }
+
+        /**
+         * Rotate through all camera modes.
+         */
         public void rotateCamMode()
         {
             int tmp = (Mode & ~0b1111)>>4;
@@ -387,6 +525,12 @@ public class DataPackets
             if(tmp>4) tmp=0;
             Mode|=tmp<<4;
         }
+
+        /**
+         * Set UI mode.
+         *
+         * @param m UiMode enum
+         */
         public void setUiMode(UiMode m)
         {
             Mode &= ~0b1111;
@@ -405,6 +549,10 @@ public class DataPackets
                     break;
             }
         }
+
+        /**
+         * Rotate through all Ui modes
+         */
         public void rotateUiMode()
         {
             int tmp = Mode & 0b1111;
@@ -413,6 +561,12 @@ public class DataPackets
             if(tmp>2) tmp=0;
             Mode|=tmp;
         }
+
+        /**
+         * Set Navball mode.
+         *
+         * @param m NavballMode enum
+         */
         public void setNavballMode(NavballMode m)
         {
             NavballSASMode&=~0b11110000;
@@ -432,6 +586,13 @@ public class DataPackets
                     break;
             }
         }
+
+        /**
+         * Rotate through Navball mode.
+         * Enter Target mode only if target is set.
+         *
+         * @param isTargetSet True to enable enter target mode
+         */
         public void rotateNavballMode(boolean isTargetSet)
         {
             int curMode = (NavballSASMode&0b11110000)>>4;
@@ -440,6 +601,11 @@ public class DataPackets
             else setNavballMode(NavballMode.Orbit); // is in Surface or Target
         }
 
+        /**
+         * Set SAS mode.
+         *
+         * @param m SAS mode enum
+         */
         public void setSASMode(SASMode m)
         {
             NavballSASMode&=~0b1111;
@@ -482,59 +648,125 @@ public class DataPackets
             }
         }
 
-
+        /**
+         * Set action group.
+         *
+         * @param n Action group 0-9
+         * @param b Activate/Deactivate
+         */
         public void setActionGroup(int n, boolean b)
         {
             ControlGroup[n+1]=b;
         }
 
+        /**
+         * Set SAS.
+         *
+         * @param b True to activate SAS
+         */
         public void setSAS(boolean b)
         {
             if(b) MainControls |= (1<<7);
             else MainControls &= ~(1<<7);
         }
+
+        /**
+         * Set RCS.
+         *
+         * @param b True to activate RCS
+         */
         public void setRCS(boolean b)
         {
             if(b) MainControls |= (1<<6);
             else MainControls &= ~(1<<6);
         }
+
+        /**
+         * Set light.
+         *
+         * @param b True to activate light
+         */
         public void setLight(boolean b)
         {
             if(b) MainControls |= (1<<5);
             else MainControls &= ~(1<<5);
         }
+
+        /**
+         * Set gears.
+         *
+         * @param b True to extract gears
+         */
         public void setGears(boolean b)
         {
             if(b) MainControls |= (1<<4);
             else MainControls &= ~(1<<4);
         }
+
+        /**
+         * Set brakes.
+         *
+         * @param b True to activate brakes
+         */
         public void setBrakes(boolean b)
         {
             if(b) MainControls |= (1<<3);
             else MainControls &= ~(1<<3);
         }
+
+        /**
+         * Set precision mode.
+         *
+         * @param b True to activate precision control mode
+         */
         public void setPrecision(boolean b)
         {
             if(b) MainControls |= (1<<2);
             else MainControls &= ~(1<<2);
         }
+
+        /**
+         * Trigger abort.
+         * Is automatically reset after next packet sent.
+         */
         public void setAbort()
         {
             MainControls |= (1<<1);
         }
+
+        /**
+         * Trigger staging.
+         * Is automatically reset after next packet sent.
+         */
         public void setStage()
         {
             MainControls |= (1<<0);
         }
+
+        /**
+         * Reset abort.
+         * Is automatically called after next packet sent.
+         */
         public void resetAbort()
         {
             MainControls &= ~(1<<1);
         }
+
+        /**
+         * Reset staging.
+         * Is automatically called after next packet sent.
+         */
         public void resetStage()
         {
             MainControls &= ~(1<<0);
         }
-        
+
+        /**
+         * Convert ControlPacket to byte array.
+         *
+         * @return Data byte array
+         * @throws PacketException Packet write error
+         */
         public byte[] toPacket() throws PacketException
         {
         	byte[] data = new byte[1024];
@@ -560,16 +792,30 @@ public class DataPackets
         	System.arraycopy(data, 0, datacut, 0, s.getLenght());
         	return fromPayload(datacut);
         }
-        
+
+        /**
+         * Convert to String.
+         * TODO ControlPacket.toString not implemented yet. Do if very bored some time.
+         *
+         * @return String representing the ControlPacket
+         */
         public String toString()
         {
         	String str = "CP{"+"}";
         	return str;
         }
     }
-    
-    
-    
+
+    /**
+     * Helper class to manually serialize or deserialize data.
+     * Usage serialize:
+     *  Create Serializer object with empty byte array.
+     *  Each call of serialize member function appends data to that array.
+     * Usage deserialize:
+     *  Create Serializer object with filled byte array.
+     *  Each call of deserialize member function reads data from that array.
+     *  Automatically seeks forward the number of read bytes.
+     */
     private static class Serializer
     {
     	private int off=0;
@@ -680,7 +926,19 @@ public class DataPackets
     		return off;
     	}
     }
-    
+
+    /**
+     * Get payload of KSPEthernetIO data packet.
+     *
+     * Packet structure:
+     * Packet = [header][size][payload][checksum];
+     * Header = [Header1=0xBE][Header2=0xEF]
+     * size   = [payload.length (0-255)]
+     *
+     * @param packet Data packet
+     * @return Byte array with payload
+     * @throws PacketException Packet read error
+     */
     public static byte[] getPayload(byte[] packet) throws PacketException
     {
     	if(packet.length < 4) throw new PacketException("Packet too short!");
@@ -702,6 +960,18 @@ public class DataPackets
         return payload;
     }
 
+    /**
+     * Create packet from payload.
+     *
+     * Packet structure:
+     * Packet = [header][size][payload][checksum];
+     * Header = [Header1=0xBE][Header2=0xEF]
+     * size   = [payload.length (0-255)]
+     *
+     * @param payload Payload data
+     * @return Data packet
+     * @throws PacketException Packet write error
+     */
     public static byte[] fromPayload(byte[] payload) throws PacketException
     { 
     	if(payload.length <= 0) throw new PacketException("Payload too short!");
@@ -724,7 +994,14 @@ public class DataPackets
         
         return packet;
     }
-     
+
+    /**
+     * Packet exception.
+     *  - Payload too long
+     *  - Payload too short
+     *  - Wrong packet header
+     *  - Checksum error
+     */
     public static class PacketException extends Exception
     {
     	public PacketException(String message)
@@ -732,60 +1009,4 @@ public class DataPackets
     		super(message);
     	}
     }
-/*
-    public class ControlPacket
-    {
-
-    };*/
-      /*             
-    public static byte[] StructureToPacket(object anything)
-    {
-        byte[] Payload = StructureToByteArray(anything);
-        byte header1 = 0xBE;
-        byte header2 = 0xEF;
-        byte size = (byte)Payload.Length;
-        byte checksum = size;
-
-        byte[] Packet = new byte[size + 4];
-
-        //Packet = [header][size][payload][checksum];
-        //Header = [Header1=0xBE][Header2=0xEF]
-        //size = [payload.length (0-255)]
-
-        for (int i = 0; i < size; i++)
-        {
-            checksum ^= Payload[i];
-        }
-
-        Payload.CopyTo(Packet, 3);
-        Packet[0] = header1;
-        Packet[1] = header2;
-        Packet[2] = size;
-        Packet[Packet.Length - 1] = checksum;
-
-        return Packet;
-    }
-
-    //these are copied from the intarwebs, converts struct to byte array
-    public static byte[] StructureToByteArray(object obj)
-    {
-        int len = Marshal.SizeOf(obj);
-        byte[] arr = new byte[len];
-        IntPtr ptr = Marshal.AllocHGlobal(len);
-        Marshal.StructureToPtr(obj, ptr, true);
-        Marshal.Copy(ptr, arr, 0, len);
-        Marshal.FreeHGlobal(ptr);
-        return arr;
-    }
-
-    public static object ByteArrayToStructure(byte[] bytearray, object obj)
-    {
-        int len = Marshal.SizeOf(obj);
-        IntPtr i = Marshal.AllocHGlobal(len);
-        Marshal.Copy(bytearray, 0, i, len);
-        obj = Marshal.PtrToStructure(i, obj.GetType());
-        Marshal.FreeHGlobal(i);
-        return obj;
-    }*/
-
 }
