@@ -10,11 +10,14 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.util.TypedValue;
 
-
-
+/**
+ * Navball class.
+ * Set roll, pitch and yaw angles and get a navball bitmap.
+ * The bitmap contains Vector nodes and optional prograde, maneuver and target node.
+ */
 public class Navball
 {
-    private Paint lineColor, lineColorNorth, topSideColor, bottomSideColor;
+    private Paint lineColor, lineColorNorth, topSideColor, bottomSideColor, orange;
 
     private double roll=0, pitch=0, yaw=0;
     private double progradepitch=0, progradeyaw=0;
@@ -25,6 +28,10 @@ public class Navball
     private boolean drawTarget = false;
     private boolean hideRadialNormal = false;
 
+    /**
+     * Create new navball.
+     * Initialize coloring.
+     */
     public Navball()
     {
         //Initialize colors
@@ -48,43 +55,92 @@ public class Navball
         bottomSideColor.setStyle(Paint.Style.FILL);
         bottomSideColor.setAntiAlias(false);
         bottomSideColor.setARGB(255,150,100,50);
+
+        orange =  new Paint();
+        orange.setStyle(Paint.Style.FILL);
+        orange.setAntiAlias(true);
+        orange.setARGB(255,255,200,0);
     }
 
+    /**
+     * Set roll, pitch and yaw angles
+     * @param r Roll
+     * @param p Pitch
+     * @param y Yaw
+     */
     public void set(double r, double p, double y)
     {
         roll=r;
         pitch=p;
         yaw=y;
     }
+
+    /**
+     * Set prograde vector
+     * @param p Pitch
+     * @param y Yaw
+     */
     public void setPrograde(double p, double y)
     {
         progradepitch=p;
         progradeyaw=y;
     }
+
+    /**
+     * Set maneuver vector
+     * @param p Pitch
+     * @param y Yaw
+     */
     public void setManeuver(double p, double y)
     {
         maneuverpitch=p;
         maneuveryaw=y;
     }
+
+    /**
+     * Set target vector
+     * @param p Pitch
+     * @param y Yaw
+     */
     public void setTarget(double p, double y)
     {
         targetpitch=p;
         targetyaw=y;
     }
 
+    /**
+     * Hide normal and radial vector
+     * @param b True = hide
+     */
     public void hideRadialNormal(boolean b)
     {
         hideRadialNormal = b;
     }
+    /**
+     * Hide maneuver vector
+     * @param b True = hide
+     */
     public void setManeuverDisable(boolean b)
     {
         drawManeuver = !b;
     }
+    /**
+     * Hide target vector
+     * @param b True = hide
+     */
     public void setTargetDisable(boolean b)
     {
         drawTarget = !b;
     }
 
+    /**
+     * Render Navball bitmap.
+     * Currently very CPU intense. To be optimized.
+     * @param w Wide in px
+     * @param h Height in px
+     * @param activeActivity Context to get ressource images
+     * @return Navball bitmap
+     */
     public Bitmap render(int w, int h, Activity activeActivity)
     {
         initScale(w);
@@ -112,10 +168,8 @@ public class Navball
             {
                 Vector cur1 = Vector.point(Math.PI - Math.PI * (i-5)/180.0, Math.PI * j/180.0);
                 Vector cur2 = Vector.point(Math.PI - Math.PI * i/180.0, Math.PI * j/180.0);
-                Matrix3x1 curM1 = rot.mult(cur1.toMatrix3x1());
-                Matrix3x1 curM2 = rot.mult(cur2.toMatrix3x1());
-                Vector curRot1 = Vector.fromMatrix3x1(curM1);
-                Vector curRot2 = Vector.fromMatrix3x1(curM2);
+                Vector curRot1  = rot.mult(cur1);
+                Vector curRot2 = rot.mult(cur2);
 
                 if(prevRot1!=null && prevRot2!=null)
                 {
@@ -139,10 +193,8 @@ public class Navball
             {
                 Vector cur1 = Vector.point(Math.PI - Math.PI * (i-5)/180.0, Math.PI * j/180.0);
                 Vector cur2 = Vector.point(Math.PI - Math.PI * i/180.0, Math.PI * j/180.0);
-                Matrix3x1 curM1 = rot.mult(cur1.toMatrix3x1());
-                Matrix3x1 curM2 = rot.mult(cur2.toMatrix3x1());
-                Vector curRot1 = Vector.fromMatrix3x1(curM1);
-                Vector curRot2 = Vector.fromMatrix3x1(curM2);
+                Vector curRot1 = rot.mult(cur1);
+                Vector curRot2 = rot.mult(cur2);
 
                 if(prevRot1!=null && prevRot2!=null)
                 {
@@ -170,8 +222,7 @@ public class Navball
             for(int j=0;j<=360;j+=5)
             {
                 Vector cur = Vector.point(Math.PI * i/180.0, Math.PI * j/180.0);
-                Matrix3x1 curM = rot.mult(cur.toMatrix3x1());
-                Vector curRot = Vector.fromMatrix3x1(curM);
+                Vector curRot  = rot.mult(cur);
 
                 if(prevRot!=null)
                 {
@@ -187,8 +238,7 @@ public class Navball
         for(int i=0;i<=360;i+=5)
         {
             Vector cur = Vector.point(Math.PI * i/180.0, 0);
-            Matrix3x1 curM = rot.mult(cur.toMatrix3x1());
-            Vector curRot = Vector.fromMatrix3x1(curM);
+            Vector curRot = rot.mult(cur);
 
             if(prevRot!=null)
             {
@@ -203,8 +253,7 @@ public class Navball
         for(int i=0;i<=180;i+=5)
         {
             Vector cur = Vector.point(Math.PI * i/180.0, Math.PI/2.0);
-            Matrix3x1 curM = rot.mult(cur.toMatrix3x1());
-            Vector curRot = Vector.fromMatrix3x1(curM);
+            Vector curRot = rot.mult(cur);
 
             if(prevRot!=null)
             {
@@ -219,8 +268,7 @@ public class Navball
         for(int i=180;i<=360;i+=5)
         {
             Vector cur = Vector.point(Math.PI * i/180.0, Math.PI/2.0);
-            Matrix3x1 curM = rot.mult(cur.toMatrix3x1());
-            Vector curRot = Vector.fromMatrix3x1(curM);
+            Vector curRot = rot.mult(cur);
 
             if(prevRot!=null)
             {
@@ -243,15 +291,15 @@ public class Navball
 
         //Draw orbital vectors
         Vector progradeVect = Vector.point(Math.PI/2-progradepitch,Math.PI/2+progradeyaw);
-        Vector progradeVectRot = Vector.fromMatrix3x1(rot.mult(progradeVect.toMatrix3x1()));
+        Vector progradeVectRot = rot.mult(progradeVect);
         Vector retroradeVectRot = new Vector(-progradeVectRot.x,-progradeVectRot.y,-progradeVectRot.z);
 
         Vector radialinVect = Vector.point(-progradepitch,Math.PI/2+progradeyaw);
-        Vector radialinVectRot = Vector.fromMatrix3x1(rot.mult(radialinVect.toMatrix3x1()));
+        Vector radialinVectRot = rot.mult(radialinVect);
         Vector radialoutVectRot = new Vector(-radialinVectRot.x,-radialinVectRot.y,-radialinVectRot.z);
 
         Vector antinormalVect = progradeVect.crossproduct(radialinVect);
-        Vector antinormalVectRot = Vector.fromMatrix3x1(rot.mult(antinormalVect.toMatrix3x1()));
+        Vector antinormalVectRot = rot.mult(antinormalVect);
         Vector normalVectRot = new Vector(-antinormalVectRot.x,-antinormalVectRot.y,-antinormalVectRot.z);
 
         drawVectorBitmap(canvas,progradeVectRot,R.drawable.vect_prograde,activeActivity);
@@ -268,7 +316,7 @@ public class Navball
         if(drawManeuver)
         {
             Vector maneuverVect = Vector.point(Math.PI/2-maneuverpitch,Math.PI/2+maneuveryaw);
-            Vector maneuverVectRot = Vector.fromMatrix3x1(rot.mult(maneuverVect.toMatrix3x1()));
+            Vector maneuverVectRot = rot.mult(maneuverVect);
             drawVectorBitmap(canvas,maneuverVectRot,R.drawable.vect_maneuver,activeActivity);
         }
 
@@ -276,7 +324,7 @@ public class Navball
         if(drawTarget)
         {
             Vector targetVect = Vector.point(Math.PI/2-targetpitch,Math.PI/2+targetyaw);
-            Vector targetVectRot = Vector.fromMatrix3x1(rot.mult(targetVect.toMatrix3x1()));
+            Vector targetVectRot = rot.mult(targetVect);
             Vector antitargetVectRot = new Vector(-targetVectRot.x,-targetVectRot.y,-targetVectRot.z);
             drawVectorBitmap(canvas,targetVectRot,R.drawable.vect_target,activeActivity);
             drawVectorBitmap(canvas,antitargetVectRot,R.drawable.vect_targetr,activeActivity);
@@ -285,10 +333,6 @@ public class Navball
 
 
 
-        Paint orange =  new Paint();
-        orange.setStyle(Paint.Style.FILL);
-        orange.setAntiAlias(true);
-        orange.setARGB(255,255,200,0);
 
         Vector v1 = new Vector(-0.5, 0, 0);
         Vector v2 = new Vector(-0.2, 0, 0);
@@ -305,6 +349,13 @@ public class Navball
         return bmp;
     }
 
+    /**
+     * Draw vector bitmap on canvas.
+     * @param g Canvas
+     * @param v Position
+     * @param drawable Drawable ID
+     * @param activeActivity Context to load drawable ressource
+     */
     private void drawVectorBitmap(Canvas g, Vector v, int drawable, Activity activeActivity)
     {
         if(v.z>0.05)
@@ -318,6 +369,14 @@ public class Navball
             g.drawBitmap(progradeBmp, source, target, new Paint());
         }
     }
+
+    /**
+     * Draw point on canvas
+     * @param g Canvas
+     * @param v Position
+     * @param d Diameter in px
+     * @param p Color
+     */
     private void drawPoint(Canvas g, Vector v, int d, Paint p)
     {
         int r = (int)((double)d*(v.z+3.0f)/8.0f);
@@ -325,6 +384,14 @@ public class Navball
         int y = scale(v.y)-r;
         g.drawCircle(x, y, r, p);
     }
+
+    /**
+     * Draw line on canvas
+     * @param g Canvas
+     * @param v1 Start point
+     * @param v2 Target point
+     * @param p Color
+     */
     private void drawLine(Canvas g, Vector v1, Vector v2, Paint p)
     {
         int x1 = scale(v1.x);
@@ -333,6 +400,15 @@ public class Navball
         int y2 = scale(v2.y);
         g.drawLine(x1, y1, x2, y2, p);
     }
+
+    /**
+     * Draw line with given strength on canvas
+     * @param g Canvas
+     * @param v1 Start point
+     * @param v2 Target point
+     * @param d Line strength
+     * @param p Color
+     */
     private void drawLine(Canvas g, Vector v1, Vector v2, int d, Paint p)
     {
         int x1 = scale(v1.x);
@@ -343,6 +419,16 @@ public class Navball
             for(int j=0;j<d;j++)
                 g.drawLine(x1+i-d/2, y1+j-d/2, x2+i-d/2, y2+j-d/2, p);
     }
+
+    /**
+     * Draw rectangle on canvas
+     * @param g Canvas
+     * @param v1 Corner
+     * @param v2 Corner
+     * @param v3 Corner
+     * @param v4 Corner
+     * @param p Color
+     */
     private void drawRect(Canvas g, Vector v1, Vector v2, Vector v3, Vector v4, Paint p)
     {
         int x[] = new int[4];
@@ -364,63 +450,27 @@ public class Navball
         g.drawPath(path, p);
     }
 
+    //Scaling factor, is initializen on new renderBitmap
     private int scaleW=1;
-    //Input -1.0f..1.0f -> 0 .. getWidth()
+
+    /**
+     * Input -1.0f..1.0f -> 0 .. getWidth()
+     * @param p Input
+     * @return Scaled output
+     */
     private int scale(double p)
     {
         return (int)(((scaleW-1)*       (((p+1.0f)/2.0f)*1.0-0.0)));
     }
+
+    /**
+     * Initialize scaling
+     * @param r Bitmap width
+     */
     private void initScale(int r)
     {
         scaleW = r;
     }
 
-    private static class Vector
-    {
-        public double x, y, z;
-        public Vector()
-        {
-            x=y=z=0.0f;
-        }
-        public Vector(double x, double y, double z)
-        {
-            this.x=x;
-            this.y=y;
-            this.z=z;
-        }
-        public static Vector fromMatrix3x1(Matrix3x1 m)
-        {
-            return new Vector(m.get(0), m.get(1), m.get(2));
-        }
-        public Matrix3x1 toMatrix3x1()
-        {
-            Matrix3x1 m = new Matrix3x1();
-            m.set(0, x);
-            m.set(1, y);
-            m.set(2, z);
-            return m;
-        }
 
-        public Vector crossproduct(Vector b)
-        {
-            Vector a = this;
-            double nx = a.y*b.z-a.z*b.y;
-            double ny = a.z*b.x-a.x*b.z;
-            double nz = a.x*b.y-a.y*b.x;
-            return new Vector(nx,ny,nz);
-        }
-
-        public static Vector point(double alpha, double beta)
-        {
-            Vector v = new Vector();
-            v.z=Math.cos(alpha);
-            v.x=Math.sin(alpha)*Math.sin(beta);
-            v.y=Math.sin(alpha)*Math.cos(beta);
-            return v;
-        }
-        public String toString()
-        {
-            return "{"+x+","+y+","+z+"}";
-        }
-    }
 }

@@ -38,7 +38,6 @@ import java.util.concurrent.Semaphore;
 //TODO Code documentation, tidy up
 //TODO Clean compiler warnings
 //TODO Buffer incoming data packets with adaptive playout to get "smooth" data stream
-//TODO Matrix 3x1 and Vector class are redundant - Combine to one class
 //TODO Rendering Navball is very CPU intense - Implement OpenGL rendering
 //TODO Split FlightInfo class in some smaller classes
 

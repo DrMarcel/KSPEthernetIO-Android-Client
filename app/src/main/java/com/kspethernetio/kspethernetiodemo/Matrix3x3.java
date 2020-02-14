@@ -4,15 +4,34 @@ public class Matrix3x3
 {
     private double[][] x = {{0,0,0},{0,0,0},{0,0,0}};
 
+
+    /**
+     * Get value at row,column
+     * @param r Row
+     * @param c Column
+     * @return Value
+     */
     public double get(int r, int c)
     {
         return x[c][r];
     }
+
+    /**
+     * Set value at row,column
+     * @param r Row
+     * @param c Column
+     * @return Value
+     */
     public void set(int r, int c, double v)
     {
         x[c][r] = v;
     }
 
+    /**
+     * Multiply with other matrix
+     * @param m Matrix B
+     * @return Product AxB
+     */
     public Matrix3x3 mult(Matrix3x3 m)
     {
         Matrix3x3 p = new Matrix3x3();
@@ -23,9 +42,15 @@ public class Matrix3x3
 
         return p;
     }
-    public Matrix3x1 mult(Matrix3x1 v)
+
+    /**
+     * Multiply Matrix with Vector
+     * @param v Vector
+     * @return Result vector
+     */
+    public Vector mult(Vector v)
     {
-        Matrix3x1 p = new Matrix3x1();
+        Vector p = new Vector();
 
         for(int r=0; r<3; r++)
             for(int i=0; i<3; i++) p.set(r, p.get(r) + x[i][r] * v.get(i));
@@ -33,6 +58,11 @@ public class Matrix3x3
         return p;
     }
 
+    /**
+     * Create roll transformation matrix
+     * @param gamma Angle
+     * @return Transformation matrix
+     */
     public static Matrix3x3 roll(double gamma)
     {
         Matrix3x3 p = new Matrix3x3();
@@ -44,6 +74,11 @@ public class Matrix3x3
         return p;
     }
 
+    /**
+     * Create pitch transformation matrix
+     * @param beta Angle
+     * @return Transformation matrix
+     */
     public static Matrix3x3 pitch(double beta)
     {
         Matrix3x3 p = new Matrix3x3();
@@ -55,6 +90,11 @@ public class Matrix3x3
         return p;
     }
 
+    /**
+     * Create yaw transformation matrix
+     * @param alpha Angle
+     * @return Transformation matrix
+     */
     public static Matrix3x3 yaw(double alpha)
     {
         Matrix3x3 p = new Matrix3x3();
@@ -66,7 +106,14 @@ public class Matrix3x3
         return p;
     }
 
-
+    /**
+     * Create transformation matrix from quaterion
+     * @param x Quaterion X
+     * @param y Quaterion Y
+     * @param z Quaterion Z
+     * @param w Quaterion W
+     * @return Transformation matrix
+     */
     public static Matrix3x3 fromQuaterion(double x, double y, double z, double w)
     {
         Matrix3x3 p = new Matrix3x3();
@@ -82,6 +129,14 @@ public class Matrix3x3
         return p;
     }
 
+    /**
+     * Create combined transformation matrix from roll, pitch and yaw.
+     * Various functions differ in the order the transformation is apllied
+     * @param roll Roll
+     * @param pitch Pitch
+     * @param yaw Yaw
+     * @return Transformation matrix
+     */
     public static Matrix3x3 ypr(double roll, double pitch, double yaw)
     {
         Matrix3x3 p = yaw(yaw).mult(pitch(pitch).mult(roll(roll)));
