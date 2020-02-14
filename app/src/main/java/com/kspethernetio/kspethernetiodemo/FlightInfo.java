@@ -35,7 +35,6 @@ import java.util.concurrent.Semaphore;
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
 //TODO Reset data on active vessel change - Transmit vessel ID ?
-//TODO Update info screen
 //TODO Code documentation, tidy up
 //TODO Clean compiler warnings
 //TODO Buffer incoming data packets with adaptive playout to get "smooth" data stream
@@ -370,7 +369,7 @@ public class FlightInfo extends AppCompatActivity
                                 "\n" +
                                 "Author: DrMarcel\n" +
                                 "Contact: kspethernetio@mail.perske.eu\n" +
-                                "GitHub: TODO\n" +
+                                "GitHub: https://github.com/DrMarcel/KSPEthernetIO-Android-Client\n" +
                                 "License: CC BY 4.0\n" +
                                 "\n" +
                                 "https://creativecommons.org/licenses/by/4.0/\n" +
