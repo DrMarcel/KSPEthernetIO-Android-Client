@@ -3,13 +3,15 @@ package com.kspethernetio.kspethernetiodemo.KSPEthernetIO;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.MyEvent;
+import java.util.concurrent.Semaphore;
+
+import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.AbstractEvent;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventListener;
 
 /**
  * Statemachine can start and stop a statemachine made of State-Objects.
  * Provides a Listener interface to recognize statechanges.
- * Acts as ActionListener to forward ActionEvents to the States.
+ * Acts as EventListener to forward AbstractEvents to the States.
  * 
  * @author Josh Perske
  */
@@ -36,6 +38,7 @@ public class Statemachine implements EventListener
 	{
 		this(name, STANDARD_STEP_DELAY);
 	}
+
 	/**
 	 * Create a new Statemachine.
 	 * @param name Name of the Statemachine
@@ -123,10 +126,10 @@ public class Statemachine implements EventListener
 		 * the Statemachine is stopped and the Finished event
 		 * is triggered. If return value is 'this' the
 		 * Statemachnine stays in current state.
-		 * @param e null or ActionEvent
+		 * @param event null or ActionEvent
 		 * @return Next State
 		 */
-		public abstract State onExecute(MyEvent e);
+		public abstract State onExecute(AbstractEvent event);
 		/**
 		 * Once called when the State is finished.
 		 */
@@ -188,8 +191,8 @@ public class Statemachine implements EventListener
 	}
 	/**
 	 * Returns the active State ID.
-	 * Return 0 if the Statemachine is not active.
-	 * @return The active State ID or 0.
+	 * Return -1 if the Statemachine is not active.
+	 * @return The active State ID or -1.
 	 */
 	public int getActiveStateID()
 	{
@@ -354,26 +357,51 @@ public class Statemachine implements EventListener
 	}
 
 	/**
-	 * Forward Action Events to the States.
+	 * Forward Events to the States.
 	 */
-	private List<MyEvent> myEventStack = new ArrayList<MyEvent>();
-	private MyEvent nextEvent()
+	private List<AbstractEvent> eventStack = new ArrayList<AbstractEvent>();
+	private Semaphore eventStackLock = new Semaphore(1);
+	private AbstractEvent nextEvent()
 	{
-		MyEvent e = null;
-		if(myEventStack.size() > 0)
+		AbstractEvent e = null;
+		try
 		{
-			e = myEventStack.get(myEventStack.size()-1);
-			myEventStack.remove(myEventStack.size()-1);
+			eventStackLock.acquire();
+			if(eventStack.size() > 0)
+			{
+				e = eventStack.get(eventStack.size()-1);
+				eventStack.remove(eventStack.size()-1);
+			}
+			eventStackLock.release();
+		}
+		catch(InterruptedException e1)
+		{
 		}
 		return e;
 	}
 	private void clearEventStack()
 	{
-		myEventStack.clear();
+		try
+		{
+			eventStackLock.acquire();
+			eventStack.clear();
+			eventStackLock.release();
+		}
+		catch(InterruptedException e1)
+		{
+		}
 	}
 	@Override
-	public void onEvent(MyEvent myEvent)
+	public void onEvent(AbstractEvent event)
 	{
-		myEventStack.add(myEvent);
+		try
+		{
+			eventStackLock.acquire();
+			eventStack.add(event);
+			eventStackLock.release();
+		}
+		catch(InterruptedException e1)
+		{
+		}
 	}
 }
