@@ -35,7 +35,6 @@ import java.util.concurrent.Semaphore;
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
 //TODO Reset data on active vessel change - Transmit vessel ID ?
-//TODO Code documentation, tidy up
 //TODO Clean compiler warnings
 //TODO Buffer incoming data packets with adaptive playout to get "smooth" data stream
 //TODO Rendering Navball is very CPU intense - Implement OpenGL rendering
