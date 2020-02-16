@@ -27,7 +27,6 @@ import java.util.concurrent.Semaphore;
 
 
 //TODO Add more orbital infos
-//TODO Custom actiongroup names in settings
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
 //TODO Reset data on active vessel change - Transmit vessel ID ?
@@ -232,6 +231,22 @@ public class FlightInfo extends AppCompatActivity
         toggleSASMan.setOnCheckedChangeListener(actionSASSelectListener);
 
         buttonMenu.setOnLongClickListener(actionButtonHoldListener);
+
+        setActionNames();
+    }
+
+    private void setActionNames()
+    {
+        toggleAction1.setTextOn(settings.getActionName(0));
+        toggleAction2.setTextOn(settings.getActionName(1));
+        toggleAction3.setTextOn(settings.getActionName(2));
+        toggleAction4.setTextOn(settings.getActionName(3));
+        toggleAction5.setTextOn(settings.getActionName(4));
+        toggleAction1.setTextOff(settings.getActionName(0));
+        toggleAction2.setTextOff(settings.getActionName(1));
+        toggleAction3.setTextOff(settings.getActionName(2));
+        toggleAction4.setTextOff(settings.getActionName(3));
+        toggleAction5.setTextOff(settings.getActionName(4));
     }
     
     private void updateViews(boolean inactive)
@@ -344,16 +359,19 @@ public class FlightInfo extends AppCompatActivity
                     showInfo();
                     break;
                 case R.id.buttonSettings:
-                    settings.showSettings(activeActivity, new DialogInterface.OnClickListener()
-                    {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which)
-                        {
-                            initializeClient();
-                        }
-                    });
+                    settings.showSettings(activeActivity, settingsChanged);
                     break;
             }
+        }
+    };
+
+    private DialogInterface.OnClickListener settingsChanged = new DialogInterface.OnClickListener()
+    {
+        @Override
+        public void onClick(DialogInterface dialog, int which)
+        {
+            setActionNames();
+            initializeClient();
         }
     };
 
