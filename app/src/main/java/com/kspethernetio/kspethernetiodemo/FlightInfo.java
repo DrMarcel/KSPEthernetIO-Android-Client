@@ -15,11 +15,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets;
@@ -30,7 +27,6 @@ import java.util.concurrent.Semaphore;
 
 
 //TODO Add more orbital infos
-//TODO Permanent save settings
 //TODO Custom actiongroup names in settings
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
@@ -44,6 +40,8 @@ import java.util.concurrent.Semaphore;
 public class FlightInfo extends AppCompatActivity
 {
     Activity activeActivity;
+
+    Settings settings;
 
     Semaphore navballLock = new Semaphore(1);
     Navball navball = new Navball();
@@ -110,7 +108,6 @@ public class FlightInfo extends AppCompatActivity
     Semaphore vesselDataLock = new Semaphore(1);
     DataPackets.VesselData vesselData;
 
-    int port = 2342, intervall=50;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -125,6 +122,8 @@ public class FlightInfo extends AppCompatActivity
 
         setContentView(R.layout.activity_flight_info);
 
+        settings = new Settings(getApplicationContext());
+        Utility.initialize(getApplicationContext());
         initializeViews();
         updateViews(true);
         initializeClient();
@@ -138,7 +137,7 @@ public class FlightInfo extends AppCompatActivity
             client.removeEventListener(clientListener);
             client.destroy();
         }
-        client = new KSPEthernetClient(port, intervall);
+        client = new KSPEthernetClient(settings.getPort(), settings.getIntervall());
         client.addEventListener(clientListener);
         updateUi.run();
     }
@@ -345,7 +344,14 @@ public class FlightInfo extends AppCompatActivity
                     showInfo();
                     break;
                 case R.id.buttonSettings:
-                    showSettings();
+                    settings.showSettings(activeActivity, new DialogInterface.OnClickListener()
+                    {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which)
+                        {
+                            initializeClient();
+                        }
+                    });
                     break;
             }
         }
@@ -380,57 +386,7 @@ public class FlightInfo extends AppCompatActivity
                 .show();
     }
 
-    private void showSettings()
-    {
-        LinearLayout settingsView = new LinearLayout(activeActivity);
-        settingsView.setOrientation(LinearLayout.VERTICAL);
-        TextView labelPort = new TextView(activeActivity);
-        labelPort.setText("Port:");
-        EditText inputPort = new EditText(activeActivity);
-        inputPort.setMaxLines(1);
-        inputPort.setMaxEms(16);
-        inputPort.setText(Integer.toString(port));
-        TextView labelIntervall = new TextView(activeActivity);
-        labelIntervall.setText("Send intervall (ms):");
-        EditText inputIntervall = new EditText(activeActivity);
-        inputIntervall.setMaxLines(1);
-        inputIntervall.setMaxEms(16);
-        inputIntervall.setText(Integer.toString(intervall));
-        settingsView.addView(labelPort);
-        settingsView.addView(inputPort);
-        settingsView.addView(labelIntervall);
-        settingsView.addView(inputIntervall);
 
-        final EditText inputPortF = inputPort;
-        final EditText inputIntervallF = inputIntervall;
-
-        new AlertDialog.Builder(activeActivity)
-                .setTitle("Settings")
-                .setView(settingsView)
-                .setPositiveButton("Accept", new DialogInterface.OnClickListener()
-                {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which)
-                    {
-                        try
-                        {
-                            int newPort = Integer.decode(inputPortF.getText().toString());
-                            int newIntervall = Integer.decode(inputIntervallF.getText().toString());
-                            port=newPort;
-                            intervall=newIntervall;
-                            initializeClient();
-                            showMessage("Settings saved!");
-                        }
-                        catch(Exception e)
-                        {
-                            showMessage("Settings not saved: Wrong input format!");
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .setIcon(R.drawable.menu_settings)
-                .show();
-    }
 
     private View.OnLongClickListener actionButtonHoldListener = new View.OnLongClickListener()
     {
@@ -587,7 +543,7 @@ public class FlightInfo extends AppCompatActivity
         public void onKSPEthernetError(KSPEthernetClient sender, Exception e)
         {
 
-            showMessage("Ethernet client error: "+e.getMessage());
+            Utility.showMessage("Ethernet client error: "+e.getMessage());
         }
 
         @Override
@@ -843,13 +799,6 @@ public class FlightInfo extends AppCompatActivity
         view.setImageBitmap(bmp);
     }
 
-    private void showMessage(String message)
-    {
-        Toast toast = Toast.makeText(getApplicationContext(),
-                message,
-                Toast.LENGTH_LONG);
-        toast.show();
-    }
 
 
     @Override
