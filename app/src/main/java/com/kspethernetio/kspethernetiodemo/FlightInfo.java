@@ -26,7 +26,6 @@ import java.util.concurrent.Semaphore;
 
 
 
-//TODO Add more orbital infos
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
 //TODO Clean compiler warnings
