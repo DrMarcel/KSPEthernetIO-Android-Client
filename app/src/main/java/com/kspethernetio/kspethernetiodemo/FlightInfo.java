@@ -793,6 +793,13 @@ public class FlightInfo extends AppCompatActivity
                         navball.setPrograde(2 * Math.PI * data.ProgradePitch / 65535.0, 2 * Math.PI * data.ProgradeHeading / 65535.0);
                         navball.setManeuver(2 * Math.PI * data.ManeuverPitch / 65535.0, 2 * Math.PI * data.ManeuverHeading / 65535.0);
                         navball.setTarget(2 * Math.PI * data.TargetPitch / 65535.0, 2 * Math.PI * data.TargetHeading / 65535.0);
+
+
+                        boolean isMoving =
+                                (data.getNavballMode() == DataPackets.NavballMode.Orbit && data.VOrbit > 0.05) ||
+                                (data.getNavballMode() == DataPackets.NavballMode.Surface && data.Vsurf > 0.05) ||
+                                (data.getNavballMode() == DataPackets.NavballMode.Target && data.Vsurf > 0.05 && data.VOrbit > 0.05);
+                        navball.hideVelocityVectors(!isMoving);
                         navball.setManeuverDisable(!data.isManeuverSet());
                         navball.setTargetDisable(!data.isTargetSet());
                         navball.hideRadialNormal(data.getNavballMode() == DataPackets.NavballMode.Target);

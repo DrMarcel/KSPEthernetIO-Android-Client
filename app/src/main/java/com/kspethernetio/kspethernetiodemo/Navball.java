@@ -27,6 +27,7 @@ public class Navball
     private boolean drawManeuver = false;
     private boolean drawTarget = false;
     private boolean hideRadialNormal = false;
+    private boolean drawVectors = false;
 
     /**
      * Create new navball.
@@ -108,6 +109,14 @@ public class Navball
         targetyaw=y;
     }
 
+    /**
+     * Hide all vectors
+     * @param b True = hide
+     */
+    public void hideVelocityVectors(boolean b)
+    {
+        drawVectors = !b;
+    }
     /**
      * Hide normal and radial vector
      * @param b True = hide
@@ -302,9 +311,9 @@ public class Navball
         Vector antinormalVectRot = rot.mult(antinormalVect);
         Vector normalVectRot = new Vector(-antinormalVectRot.x,-antinormalVectRot.y,-antinormalVectRot.z);
 
-        drawVectorBitmap(canvas,progradeVectRot,R.drawable.vect_prograde,activeActivity);
-        drawVectorBitmap(canvas,retroradeVectRot,R.drawable.vect_retrograde,activeActivity);
-        if(!hideRadialNormal)
+        if(drawVectors) drawVectorBitmap(canvas,progradeVectRot,R.drawable.vect_prograde,activeActivity);
+        if(drawVectors) drawVectorBitmap(canvas,retroradeVectRot,R.drawable.vect_retrograde,activeActivity);
+        if(!hideRadialNormal && drawVectors)
         {
             drawVectorBitmap(canvas, normalVectRot, R.drawable.vect_normal, activeActivity);
             drawVectorBitmap(canvas, antinormalVectRot, R.drawable.vect_antinormal, activeActivity);
