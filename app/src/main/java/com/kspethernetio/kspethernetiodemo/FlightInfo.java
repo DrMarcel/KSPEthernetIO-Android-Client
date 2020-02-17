@@ -29,7 +29,6 @@ import java.util.concurrent.Semaphore;
 //TODO Add more orbital infos
 //TODO Centralize all coloring in config files
 //TODO Tests on different screen sizes
-//TODO Reset data on active vessel change - Transmit vessel ID ?
 //TODO Clean compiler warnings
 //TODO Buffer incoming data packets with adaptive playout to get "smooth" data stream
 //TODO Rendering Navball is very CPU intense - Implement OpenGL rendering
@@ -561,7 +560,7 @@ public class FlightInfo extends AppCompatActivity
         public void onKSPEthernetError(KSPEthernetClient sender, Exception e)
         {
 
-            Utility.showMessage("Ethernet client error: "+e.getMessage());
+            Utility.showMessage(activeActivity,"Ethernet client error: "+e.getMessage());
         }
 
         @Override
@@ -587,15 +586,45 @@ public class FlightInfo extends AppCompatActivity
             try
             {
                 vesselDataLock.acquire();
+                client.controlData.forceResync();
                 vesselData=null;
                 vesselDataLock.release();
-
 
                 runOnUiThread(updateUi);
             }
             catch(InterruptedException e)
             {
 
+            }
+        }
+
+        @Override
+        public void onKSPEthernetHostStateChanged(KSPEthernetClient sender, DataPackets.HostState state)
+        {
+            switch(state)
+            {
+                case InFlight:
+                    Utility.showMessage(activeActivity,"Flight started");
+                    break;
+                case NotInFlight:
+                    Utility.showMessage(activeActivity,"Flight stopped");
+                    try
+                    {
+                        vesselDataLock.acquire();
+                        client.controlData.forceResync();
+                        vesselData=null;
+                        vesselDataLock.release();
+
+                        runOnUiThread(updateUi);
+                    }
+                    catch(InterruptedException e)
+                    {
+
+                    }
+                    break;
+                default:
+                    //Unknown host state
+                    break;
             }
         }
     };
@@ -769,6 +798,17 @@ public class FlightInfo extends AppCompatActivity
                         navball.hideRadialNormal(data.getNavballMode() == DataPackets.NavballMode.Target);
                         Thread t = new Thread(renderNavball);
                         t.start();
+                    }
+
+
+                    //Check for vessel change
+                    if(client.controlData.hasVesselChanged(data))
+                    {
+                        Utility.showMessage(activeActivity,"Vessel changed");
+
+                        //Initiliaze stuff like light, landing gears and action groups from new
+                        //vessel to prevent bad things.
+                        client.controlData.syncNewVessel(data);
                     }
 
                 }

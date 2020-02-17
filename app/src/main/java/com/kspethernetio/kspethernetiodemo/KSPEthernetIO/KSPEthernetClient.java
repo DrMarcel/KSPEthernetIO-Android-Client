@@ -10,6 +10,7 @@ import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.ControlPack
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.HandshakePacket;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.PacketException;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.VesselData;
+import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.HostState;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.AbstractEvent;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventProvider;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.PacketHandler.PacketEvent;
@@ -46,6 +47,9 @@ public class KSPEthernetClient
 	//vesselData contains last received VesselData
 	public ControlPacket controlData = new ControlPacket();
 	private VesselData vesselData = new VesselData();
+
+	//Current host state
+	private HostState hostState = HostState.Disconnected;
 
 	private int port; //Host port
 	private int refresh; //Data send refresh rate
@@ -118,6 +122,28 @@ public class KSPEthernetClient
 	public void reset()
 	{
 		if(sm.isActive()) smc.notifyEvent(ResetCommand);		
+	}
+
+	/**
+	 * Get HostState.
+	 *
+	 * @return HostState
+	 */
+	public HostState getHostState()
+	{
+		return hostState;
+	}
+
+	/**
+	 * Set HostState and notify listeners if changed.
+	 */
+	private void setHostState(HostState newState)
+	{
+		if(hostState != newState)
+		{
+			hostState = newState;
+			notifyHostStateChanged(hostState);
+		}
 	}
 
 	/**
@@ -207,6 +233,7 @@ public class KSPEthernetClient
 		void onKSPEthernetError(KSPEthernetClient sender, Exception e);
 		void onKSPEthernetInvalidate(KSPEthernetClient sender, VesselData vesselData);
 		void onKSPEthernetStateChanged(KSPEthernetClient sender, String state);
+		void onKSPEthernetHostStateChanged(KSPEthernetClient sender, HostState state);
 	}
 
 	//Event listeners
@@ -260,6 +287,16 @@ public class KSPEthernetClient
 		for(KSPEthernetListener l : listeners) l.onKSPEthernetStateChanged(this, s.getName());
 	}
 
+	/**
+	 * Notify all listeners if the host state has changed.
+	 *
+	 * @param s HostState
+	 */
+	private void notifyHostStateChanged(HostState s)
+	{
+		for(KSPEthernetListener l : listeners) l.onKSPEthernetHostStateChanged(this, s);
+	}
+
 
 	/* *************** *
 	 *   Statemachine  *
@@ -278,6 +315,7 @@ public class KSPEthernetClient
 		@Override
 		public void onEnter()
 		{
+			setHostState(HostState.Disconnected);
 			broadcastClient = new AsyncBroadcastClient(port);
 			broadcastClient.addEventListener(sm);
 			packetHandler = new PacketHandler();
@@ -306,6 +344,7 @@ public class KSPEthernetClient
 		@Override
 		public void onEnter()
 		{
+			setHostState(HostState.Disconnected);
 		}
 		@Override
 		public State onExecute(AbstractEvent event)
@@ -331,6 +370,7 @@ public class KSPEthernetClient
 		@Override
 		public void onEnter()
 		{
+			setHostState(HostState.Disconnected);
 			broadcastClient.startReceiveBroadcast();
 		}
 		@Override
@@ -346,6 +386,8 @@ public class KSPEthernetClient
 				switch(packetEvent.getType())
 				{
 				case HandshakeReceived:
+					//Save current host state
+					setHostState(packetEvent.getHandshakePacket().getState());
 					//Save host from received packet
 					host = packetEvent.getHandshakePacket().sender;
 					return S3_Connect;
@@ -457,7 +499,7 @@ public class KSPEthernetClient
 			HandshakePacket HP = new HandshakePacket();
 			HP.M1 = 3;
 			HP.M2 = 1;
-			HP.M3 = 4;
+			HP.state = 4;
 			try
 			{
 				tcpClient.sendData(HP.toPacket());
@@ -466,6 +508,20 @@ public class KSPEthernetClient
 			{
 				notifyError(e);
 				return S6_Restart;
+			}
+
+			//Check for received data
+			if(event != null && event.sender == packetHandler)
+			{
+				PacketEvent packetEvent = (PacketEvent) event;
+				switch(packetEvent.getType())
+				{
+					case StatusPacketReceived:
+						setHostState(packetEvent.getStatusPacket().getState());
+						break;
+					default:
+						break;
+				}
 			}
 
 			//Check for tcpClient error
@@ -548,6 +604,9 @@ public class KSPEthernetClient
 					vesselData = packetEvent.getVesselData();
 					notifyInvalidate();
 					break;
+				case StatusPacketReceived:
+					setHostState(packetEvent.getStatusPacket().getState());
+					break;
 				default:
 					break;
 				}
@@ -588,6 +647,7 @@ public class KSPEthernetClient
 		@Override
 		public void onEnter()
 		{
+			setHostState(HostState.Disconnected);
 			if(tcpClient != null)
 			{
 				tcpClient.removeEventListener(sm);
@@ -618,6 +678,7 @@ public class KSPEthernetClient
 		@Override
 		public void onEnter()
 		{
+			setHostState(HostState.Disconnected);
 			if(tcpClient != null)
 			{
 				tcpClient.removeEventListener(sm);

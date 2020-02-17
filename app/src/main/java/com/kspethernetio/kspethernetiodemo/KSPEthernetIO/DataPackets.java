@@ -18,13 +18,14 @@ import java.net.InetAddress;
 public class DataPackets
 {
 	public final static int MaxPayloadSize = 255;
-    public final static byte HSPid = 0, VDid = 1, CPid = 101; //hard coded values for packet IDS
+    public final static byte HSPid = 0, VDid = 1, SPid = 2, CPid = 101; //hard coded values for packet IDS
 
 
     public enum SASMode {Off, Regular, Prograde, Retrograde, Normal, Antinormal, RadialIn, RadialOut, Target, AntiTarget, Maneuver, Unknown}
     public enum NavballMode {Ignore, Target, Orbit, Surface, Unkonwn}
     public enum UiMode {Stage, Docking, Map}
     public enum CamMode {Auto, Free, Orbital, Chase, Locked}
+    public enum HostState {Undefined, Disconnected, InFlight, NotInFlight}
 
     /**
      * Convert time in seconds to String of format XXyXXXdXXhXXmXXs
@@ -127,7 +128,7 @@ public class DataPackets
         public int Pitch;            //43
         public int Roll;             //44
         public int Heading;          //45
-        public int ActionGroups;     //46  status bit order:SAS, RCS, Light, Gear, Brakes, Abort, Custom01 - 10
+        public int ActionGroups;     //46  state bit order:SAS, RCS, Light, Gear, Brakes, Abort, Custom01 - 10
         public short SOINumber;      //47  SOI Number (decimal format: sun-planet-moon e.g. 130 = kerbin, 131 = mun)
         public short MaxOverHeat;    //48  Max part overheat (% percent)
         public float MachNumber;     //49
@@ -149,6 +150,8 @@ public class DataPackets
         public int TargetPitch;      //60 Pitch   Of the Target   Vector;  see above for range;  (0 if no Target)
         public int TargetHeading;    //61 Heading Of the Target   Vector;  see above for range;  (0 if no Target)
         public int NormalHeading;    //62 Heading Of the Prograde Vector;  see above for range;  (Pitch of the Heading Vector is always 0)
+        public short vesselSync;     //63 Current sync value, changed on every vessel change - has to be mirrored into ControlPacket
+
 
         /**
          * Return if target is set.
@@ -363,9 +366,10 @@ public class DataPackets
             VDP.ManeuverHeading=s.deserializeUB16();            
             VDP.TargetPitch=s.deserializeUB16();
             VDP.TargetHeading=s.deserializeUB16(); 
-            VDP.NormalHeading=s.deserializeUB16(); 
-            
-        	return VDP;
+            VDP.NormalHeading=s.deserializeUB16();
+            VDP.vesselSync =s.deserializeUB8();
+
+            return VDP;
         }
 
         /**
@@ -382,6 +386,17 @@ public class DataPackets
     }
 
     /**
+     * Get the packet id from packet data array.
+     * @param packet Packet data
+     * @return Packet ID or -1
+     */
+    public static int getPacketID(byte[] packet)
+    {
+        if(packet.length<4) return -1;
+        return packet[3];
+    }
+
+    /**
      * Bidirectional handshake data.
      * Also contains the InetAddress of the sender.
      */
@@ -390,7 +405,7 @@ public class DataPackets
         public short id = HSPid;
         public short M1;
         public short M2;
-        public short M3;
+        public short state;
 
         //Wrapper for the sender InetAddress, has to be set manually after receive
         //TODO Set InetAddress in contructor
@@ -411,7 +426,7 @@ public class DataPackets
         	HP.id=s.deserializeUB8();
         	HP.M1=s.deserializeUB8();
         	HP.M2=s.deserializeUB8();
-        	HP.M3=s.deserializeUB8();
+        	HP.state =s.deserializeUB8();
         	return HP;
         }
 
@@ -428,7 +443,7 @@ public class DataPackets
         	s.serializeUB8(id);
         	s.serializeUB8(M1);
         	s.serializeUB8(M2);
-        	s.serializeUB8(M3);
+        	s.serializeUB8(state);
         	byte[] datacut = new byte[s.getLenght()];
         	System.arraycopy(data, 0, datacut, 0, s.getLenght());
         	return fromPayload(datacut);
@@ -441,8 +456,97 @@ public class DataPackets
          */
         public String toString()
         {
-        	String str = "HP{"+M1+","+M2+","+M3+"}";
+        	String str = "HP{"+M1+","+M2+","+ state +"}";
         	return str;
+        }
+
+        /**
+         * Get the host state.
+         * @return Host state
+         */
+        public HostState getState()
+        {
+            switch(state)
+            {
+                case 1:
+                    return HostState.InFlight;
+                case 2:
+                    return HostState.NotInFlight;
+                default:
+                    return HostState.Undefined;
+            }
+        }
+    }
+
+    /**
+     * Unidirectional state data.
+     * Contains current host state.
+     */
+    public static class StatusPacket
+    {
+        public short id = SPid;
+        public short state;
+
+        /**
+         * Convert byte array starting with packet ID to VesselData object.
+         *
+         * @param packet Data array
+         * @return StatusPacket
+         * @throws PacketException Packet read error
+         */
+        public static StatusPacket fromPacket(byte[] packet) throws PacketException
+        {
+            byte[] data = getPayload(packet);
+            Serializer s = new Serializer(data);
+            StatusPacket SP = new StatusPacket();
+            SP.id=s.deserializeUB8();
+            SP.state =s.deserializeUB8();
+            return SP;
+        }
+
+        /**
+         * Convert StatusPacket to byte array.
+         *
+         * @return Data byte array
+         * @throws PacketException Packet write error
+         */
+        public byte[] toPacket() throws PacketException
+        {
+            byte[] data = new byte[1024];
+            Serializer s = new Serializer(data);
+            s.serializeUB8(id);
+            s.serializeUB8(state);
+            byte[] datacut = new byte[s.getLenght()];
+            System.arraycopy(data, 0, datacut, 0, s.getLenght());
+            return fromPayload(datacut);
+        }
+
+        /**
+         * Convert to String.
+         *
+         * @return String representing the StatusPacket
+         */
+        public String toString()
+        {
+            String str = "SP{"+ state +"}";
+            return str;
+        }
+
+        /**
+         * Get the host state.
+         * @return Host state
+         */
+        public HostState getState()
+        {
+            switch(state)
+            {
+                case 1:
+                    return HostState.InFlight;
+                case 2:
+                    return HostState.NotInFlight;
+                default:
+                    return HostState.Undefined;
+            }
         }
     }
 
@@ -467,6 +571,50 @@ public class DataPackets
         public short WheelSteer;                        //-1000 -> 1000
         public short Throttle;                          // 0 -> 1000
         public short WheelThrottle;                     // 0 -> 1000
+        public short vesselSync;                        // Mirror from host to control active vessel
+
+
+        /**
+         * Synchronize some data after a vessel change.
+         * Sets vesselSync value.
+         * Has to be called after vessel change to control new vessel.
+         * @param data Data received from the new vessel
+         */
+        public void syncNewVessel(VesselData data)
+        {
+            for(int i=0;i<10;i++)
+                setActionGroup(i, data.getActionGroup(i));
+            setLight(data.getLight());
+            setGears(data.getGears());
+            setBrakes(data.getBrakes());
+            setRCS(data.getRCS());
+            setSAS(data.getSAS());
+            setSASMode(data.getSASMode());
+
+            AdditionalControlByte1 = 0;
+            Mode = 0;
+
+            vesselSync = data.vesselSync;
+        }
+
+        /**
+         * Force to resync the control data after next vessel change.
+         * Is calles on flight end or connection loss.
+         */
+        public void forceResync()
+        {
+            vesselSync = 0;
+        }
+
+        /**
+         * Check if active vessel has changed since last call of syncNewVessel()
+         * @param data Current vessel data
+         * @return True if active vessel has changed since last syncNewVessel()
+         */
+        public boolean hasVesselChanged(VesselData data)
+        {
+            return vesselSync != data.vesselSync;
+        }
 
         /**
          * Toggle Map view
@@ -788,6 +936,7 @@ public class DataPackets
             s.serializeB16(WheelSteer);
             s.serializeB16(Throttle);
             s.serializeB16(WheelThrottle);
+            s.serializeUB8(vesselSync);
         	byte[] datacut = new byte[s.getLenght()];
         	System.arraycopy(data, 0, datacut, 0, s.getLenght());
         	return fromPayload(datacut);

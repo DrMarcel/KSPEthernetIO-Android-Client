@@ -57,7 +57,7 @@ public class Settings
      * @param activeActivity Parent activity for the dialog
      * @param callback Called when settings changed
      */
-    public void showSettings(Activity activeActivity, final DialogInterface.OnClickListener callback)
+    public void showSettings(final Activity activeActivity, final DialogInterface.OnClickListener callback)
     {
         LinearLayout settingsView = new LinearLayout(activeActivity);
         settingsView.setOrientation(LinearLayout.VERTICAL);
@@ -137,13 +137,13 @@ public class Settings
                             for(int i=0; i<newAction.length; i++)
                                 setActionName(i, newAction[i]);
 
-                            Utility.showMessage("Settings saved!");
+                            Utility.showMessage(activeActivity,"Settings saved!");
 
                             callback.onClick(dialog, which);
                         }
                         catch(Exception e)
                         {
-                            Utility.showMessage("Settings not saved: Wrong input format!");
+                            Utility.showMessage(activeActivity,"Settings not saved: Wrong input format!");
                         }
                     }
                 })

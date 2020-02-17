@@ -7,6 +7,7 @@ import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.AsyncTcpClient.TcpEvent
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.HandshakePacket;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.PacketException;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.VesselData;
+import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.DataPackets.StatusPacket;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.AbstractEvent;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventListener;
 import com.kspethernetio.kspethernetiodemo.KSPEthernetIO.Events.EventProvider;
@@ -109,8 +110,21 @@ public class PacketHandler extends EventProvider implements EventListener
 			{
 				byte[] data = new byte[event.getData().length];
 				System.arraycopy(event.getData(), 0, data, 0, event.getData().length);
-				VesselData VDP = VesselData.fromPacket(data);
-				notifyEvent(new PacketEvent(this, PacketEvent.PacketEventType.VesselDataReceived, VDP));
+
+				switch(DataPackets.getPacketID(data))
+				{
+					case DataPackets.VDid:
+						VesselData VDP = VesselData.fromPacket(data);
+						notifyEvent(new PacketEvent(this, PacketEvent.PacketEventType.VesselDataReceived, VDP));
+						break;
+					case DataPackets.SPid:
+						StatusPacket SP = StatusPacket.fromPacket(data);
+						notifyEvent(new PacketEvent(this, PacketEvent.PacketEventType.StatusPacketReceived, SP));
+						break;
+					default:
+						//Ignore unkown packet
+						break;
+				}
 			}
 			catch(PacketException e)
 			{
@@ -124,7 +138,7 @@ public class PacketHandler extends EventProvider implements EventListener
 	 */
 	public static class PacketEvent extends AbstractEvent
 	{
-		public enum PacketEventType {HandshakeReceived, VesselDataReceived, PacketError}
+		public enum PacketEventType {HandshakeReceived, VesselDataReceived, StatusPacketReceived, PacketError}
 
 		/**
 		 * Create PacketEvent with HandshakePacket.
@@ -146,6 +160,18 @@ public class PacketHandler extends EventProvider implements EventListener
 		 * @param arg VesselData
 		 */
 		public PacketEvent(PacketHandler sender, PacketEventType t, VesselData arg)
+		{
+			super(sender, t.ordinal(), arg);
+		}
+
+		/**
+		 * Create PacketEvent with StatusPacket.
+		 *
+		 * @param sender PacketHandler
+		 * @param t PacketEventType
+		 * @param arg StatusPacket
+		 */
+		public PacketEvent(PacketHandler sender, PacketEventType t, StatusPacket arg)
 		{
 			super(sender, t.ordinal(), arg);
 		}
@@ -201,6 +227,16 @@ public class PacketHandler extends EventProvider implements EventListener
 		public VesselData getVesselData()
 		{
 			return (VesselData)arg;
+		}
+
+		/**
+		 * Get StatusPacket from StatusPacketReceived event.
+		 *
+		 * @return StatusPacket
+		 */
+		public StatusPacket getStatusPacket()
+		{
+			return (StatusPacket)arg;
 		}
 
 		/**
