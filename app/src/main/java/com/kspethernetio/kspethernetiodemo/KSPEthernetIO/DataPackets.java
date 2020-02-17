@@ -33,11 +33,11 @@ public class DataPackets
      * @param t Time in seconds
      * @return String of format XXyXXXdXXhXXmXXs
      */
-    public static String timeToString(long t)
+    public static String timeToString(long t, boolean showPlusMinus)
     {
         String ret = "";
-        if(t>0) ret+="-";
-        else
+        if(t>0 && showPlusMinus) ret+="-";
+        else if(showPlusMinus)
         {
             t*=-1;
             ret+="+";
@@ -63,6 +63,17 @@ public class DataPackets
     }
 
     /**
+     * Convert angle String of format XX.X°
+     *
+     * @param a Angle
+     * @return String of format XXyXXXdXXhXXmXXs
+     */
+    public static String angleToString(float a)
+    {
+        return String.format("%.1f", a) + "°";
+    }
+
+    /**
      * Convert distance in meters to String of format XXX[.]X(m|k|M)
      *
      * @param d Distance in meters
@@ -71,7 +82,8 @@ public class DataPackets
     public static String distanceToString(float d)
     {
         String ret = "";
-        if(d<100) ret += String.format("%.1f", d) + "m";
+        if(d<0) ret += "<0m";
+        else if(d<100) ret += String.format("%.1f", d) + "m";
         else if(d<300000) ret += String.format("%.0f", d) + "m";
         else if(d<300000000) ret += String.format("%.0f", d/1000) + "k";
         else ret += String.format("%.0f", d/1000000) + "M";

@@ -97,6 +97,9 @@ public class FlightInfo extends AppCompatActivity
     TextView textPE;
     TextView textAPT;
     TextView textPET;
+    TextView textECC;
+    TextView textINC;
+    TextView textPER;
 
     KSPEthernetClient client;
 
@@ -192,6 +195,9 @@ public class FlightInfo extends AppCompatActivity
         textPE = findViewById(R.id.textViewPE);
         textAPT = findViewById(R.id.textViewAPT);
         textPET = findViewById(R.id.textViewPET);
+        textINC = findViewById(R.id.textViewInc);
+        textECC = findViewById(R.id.textViewEcc);
+        textPER = findViewById(R.id.textViewPeriod);
 
         buttonPower.setOnClickListener(menuButtonListener);
         buttonSettings.setOnClickListener(menuButtonListener);
@@ -335,6 +341,9 @@ public class FlightInfo extends AppCompatActivity
             textPE.setText("-");
             textAPT.setText("");
             textPET.setText("");
+            textINC.setText("");
+            textECC.setText("");
+            textPER.setText("");
         }
     }
 
@@ -763,7 +772,7 @@ public class FlightInfo extends AppCompatActivity
                     }
 
                     if(data.isManeuverSet())
-                        buttonManeuver.setText(String.format("%.1f", data.MNDeltaV)+"m/s\nT"+DataPackets.timeToString(data.MNTime));
+                        buttonManeuver.setText(String.format("%.1f", data.MNDeltaV)+"m/s\nT"+DataPackets.timeToString(data.MNTime, true));
                     else
                         buttonManeuver.setText("No Maneuver");
 
@@ -780,11 +789,16 @@ public class FlightInfo extends AppCompatActivity
                     drawBar(imageFuelMP, data.MonoProp / data.MonoPropTot);
                     drawBar(imageFuelES, data.ECharge/ data.EChargeTot);
 
+                    //Fix flickering TAP
+                    if(data.Alt == data.AP) data.TAp=0;
 
                     textAP.setText(DataPackets.distanceToString(data.AP));
                     textPE.setText(DataPackets.distanceToString(data.PE));
-                    textAPT.setText("T"+DataPackets.timeToString(data.TAp));
-                    textPET.setText("T"+DataPackets.timeToString(data.TPe));
+                    textAPT.setText("T"+DataPackets.timeToString(data.TAp, true));
+                    textPET.setText("T"+DataPackets.timeToString(data.TPe, true));
+                    textINC.setText(DataPackets.angleToString(data.inc));
+                    textECC.setText(String.format("%.4f", data.e));
+                    textPER.setText(DataPackets.timeToString(data.period, false));
 
 
                     if(navballLock.tryAcquire())
